@@ -3,6 +3,23 @@ __email__ = "paul.l.dumoulin@gmail.com"
 
 import sys
 import urllib2
+import socket
+
+ports = [49153, 49152]
+commands = {
+  'on' : {
+    'body'   : '<u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>1</BinaryState></u:SetBinaryState>',
+    'header' : '"urn:Belkin:service:basicevent:1#SetBinaryState"'
+  },
+  'off' : {
+    'body'   : '<u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>0</BinaryState></u:SetBinaryState>',
+    'header' : '"urn:Belkin:service:basicevent:1#SetBinaryState"'
+  },
+  'status' : {
+    'body'   : '<u:GetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>1</BinaryState></u:GetBinaryState>',
+    'header' : '"urn:Belkin:service:basicevent:1#GetBinaryState"'
+  }
+}
 
 def get_args():
   # TODO - detect if running on android
@@ -12,33 +29,38 @@ def get_args():
     'command' : sys.argv[2]
   }
 
-def build_xml(action):
-  actions = {
-    'on'     : '<u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>1</BinaryState></u:SetBinaryState>',
-    'off'    : '<u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>0</BinaryState></u:SetBinaryState>'
-  }
-  xml = '<?xml version="1.0" encoding="utf-8"?>'
-  xml += '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">'
-  xml += '<s:Body>%s</s:Body></s:Envelope>' % actions[action]
+def build_body(command):
   return xml
 
-def send(ip, port, command):
+def send(ip, command, ports):
   try:
-    request = urllib2.Request('http://%s:%s/upnp/control/basicevent1' % (ip, port))
+    request = urllib2.Request('http://%s:%s/upnp/control/basicevent1' % (ip, ports[0]))
     request.add_header('Content-type', 'text/xml; charset="utf-8"')
-    request.add_header('SOAPACTION', '"urn:Belkin:service:basicevent:1#SetBinaryState"')
-    request.add_data(build_xml(command))
+    request.add_header('SOAPACTION', commands[command]['header'])
+    body = '<?xml version="1.0" encoding="utf-8"?>'
+    body += '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">'
+    body += '<s:Body>%s</s:Body></s:Envelope>' % commands[command]['body']
+    request.add_data(body)
     result = urllib2.urlopen(request, timeout=1)
-    return True
-  except:
-    return False
+    return result.read()
+  except urllib2.URLError as e:
+    if isinstance(e.reason, socket.timeout):
+      if len(ports) == 1:
+        raise Exception("AllPortsFailed")
+      ports = ports[1:]
+      send(ip, command, ports)
+      return None
+    raise
 
 def main():
   args = get_args()
-  ports = [49153, 49152]
-  for port in ports:
-    success = send(args['ip'], port, args['command'])
-    if success: break
+  if args['command'] in commands:
+    send(args['ip'], args['command'], ports)
+  elif args['command'] == 'toggle':
+    # TODO - call status, then on/off
+    pass
+  else:
+    raise Exception("InvalidCommand")
 
 if __name__ == "__main__":
   main()
