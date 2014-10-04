@@ -2,6 +2,7 @@ __author__ = "Paul Dumoulin"
 __email__ = "paul.l.dumoulin@gmail.com"
 
 import sys
+import re
 import urllib2
 import socket
 
@@ -9,7 +10,7 @@ ports = [49153, 49152]
 commands = {
   'on' : {
     'body'   : '<u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>1</BinaryState></u:SetBinaryState>',
-    'header' : '"urn:Belkin:service:basicevent:1#SetBinaryState"'
+    'header' : '"urn:Belkin:service:basicevent:1#SetBinaryState"',
   },
   'off' : {
     'body'   : '<u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>0</BinaryState></u:SetBinaryState>',
@@ -17,7 +18,13 @@ commands = {
   },
   'status' : {
     'body'   : '<u:GetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>1</BinaryState></u:GetBinaryState>',
-    'header' : '"urn:Belkin:service:basicevent:1#GetBinaryState"'
+    'header' : '"urn:Belkin:service:basicevent:1#GetBinaryState"',
+    'data'   : 'BinaryState'
+  },
+  'name' : {
+    'body'   : '<u:GetFriendlyName xmlns:u="urn:Belkin:service:basicevent:1"><FriendlyName></FriendlyName></u:GetFriendlyName>',
+    'header' : '"urn:Belkin:service:basicevent:1#GetFriendlyName"',
+    'data'   : 'FriendlyName'
   }
 }
 
@@ -28,9 +35,6 @@ def get_args():
     'ip'      : sys.argv[1],
     'command' : sys.argv[2]
   }
-
-def build_body(command):
-  return xml
 
 def send(ip, command, ports):
   try:
@@ -52,13 +56,27 @@ def send(ip, command, ports):
       return None
     raise
 
+def extract(response, name):
+  exp = '<%s>(.*?)<\/%s>' % (name, name)
+  g = re.search(exp, response)
+  if g:
+    return g.group(1)
+  return None
+
 def main():
   args = get_args()
   if args['command'] in commands:
-    send(args['ip'], args['command'], ports)
+    result = send(args['ip'], args['command'], ports)
+    if 'data' in commands[args['command']]:
+      print extract(result, commands[args['command']]['data'])
   elif args['command'] == 'toggle':
-    # TODO - call status, then on/off
-    pass
+    status = send(args['ip'], 'status', ports)
+    if status.find('<BinaryState>1</BinaryState') > -1:
+      send(args['ip'], 'off', ports)
+    elif status.find('<BinaryState>0</BinaryState') > -1:
+      send(args['ip'], 'on', ports)
+    else:
+      raise Exception("UnexpectedStatusResponse")
   else:
     raise Exception("InvalidCommand")
 
