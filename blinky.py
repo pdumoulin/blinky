@@ -6,6 +6,7 @@ import re
 import urllib2
 import socket
 
+# TODO - eliminate bad ports after they fail once
 ports = [49153, 49152]
 commands = {
   'on' : {
@@ -52,14 +53,14 @@ def send(ip, command, ports):
     request.add_data(body)
     result = urllib2.urlopen(request, timeout=1)
     return result.read()
-  except urllib2.URLError as e:
-    if isinstance(e.reason, socket.timeout):
+  except Exception as e:
+    if isinstance(e, socket.timeout):
       if len(ports) == 1:
         raise Exception("AllPortsFailed")
       ports = ports[1:]
-      send(ip, command, ports)
-      return None
-    raise
+      return send(ip, command, ports)
+    else:
+      raise
 
 def extract(response, name):
   exp = '<%s>(.*?)<\/%s>' % (name, name)
