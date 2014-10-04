@@ -25,6 +25,11 @@ commands = {
     'body'   : '<u:GetFriendlyName xmlns:u="urn:Belkin:service:basicevent:1"><FriendlyName></FriendlyName></u:GetFriendlyName>',
     'header' : '"urn:Belkin:service:basicevent:1#GetFriendlyName"',
     'data'   : 'FriendlyName'
+  },
+  'signal' : {
+    'body'   : '<u:GetSignalStrength xmlns:u="urn:Belkin:service:basicevent:1"><GetSignalStrength>0</GetSignalStrength></u:GetSignalStrength>',
+    'header' : '"urn:Belkin:service:basicevent:1#GetSignalStrength"',
+    'data'   : 'SignalStrength'
   }
 }
 
