@@ -1,7 +1,6 @@
 __author__ = "Paul Dumoulin"
 __email__ = "paul.l.dumoulin@gmail.com"
 
-import sys
 import re
 import urllib2
 
@@ -9,9 +8,10 @@ try:
   import android
   droid = android.Android()
 except ImportError:
+  import sys
   droid = None
 
-ports = [49153, 49152]
+ports = [49153, 49152, 49154]
 commands = {
   'on' : {
     'body'   : '<u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>1</BinaryState></u:SetBinaryState>',
@@ -39,11 +39,17 @@ commands = {
 }
 
 def get_args():
-  # TODO - read in args from intent when running on android
-  return {
-    'ip'      : sys.argv[1],
-    'command' : sys.argv[2]
-  }
+  if droid is None:
+    return {
+      'ip'      : sys.argv[1],
+      'command' : sys.argv[2]
+    }
+  else:
+    params = droid.getIntent().result[u'extras']
+    return {
+      'ip'      : params['%target'],
+      'command' : params['%action']
+    }
 
 def output(message):
   if droid is None:
@@ -86,7 +92,7 @@ def main():
   if args['command'] in commands:
     result = send(args['ip'], args['command'])
     if 'data' in commands[args['command']]:
-      print extract(result, commands[args['command']]['data'])
+      output(extract(result, commands[args['command']]['data']))
   elif args['command'] == 'toggle':
     status = send(args['ip'], 'status')
     if status.find('<BinaryState>1</BinaryState') > -1:
