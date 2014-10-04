@@ -4,9 +4,13 @@ __email__ = "paul.l.dumoulin@gmail.com"
 import sys
 import re
 import urllib2
-import socket
 
-# TODO - eliminate bad ports after they fail once
+try:
+  import android
+  droid = android.Android()
+except ImportError:
+  droid = None
+
 ports = [49153, 49152]
 commands = {
   'on' : {
@@ -35,16 +39,30 @@ commands = {
 }
 
 def get_args():
-  # TODO - detect if running on android
   # TODO - read in args from intent when running on android
   return {
     'ip'      : sys.argv[1],
     'command' : sys.argv[2]
   }
 
-def send(ip, command, ports):
+def output(message):
+  if droid is None:
+    print message
+  else:
+    droid.makeToast(message)
+
+def send(ip, command):
+  global ports
+  for port in ports:
+    result = try_send(ip, command, port) 
+    if result is not None:
+      ports = [port]
+      return result
+  raise Exception("TimeoutOnAllPorts")
+
+def try_send(ip, command, port):
   try:
-    request = urllib2.Request('http://%s:%s/upnp/control/basicevent1' % (ip, ports[0]))
+    request = urllib2.Request('http://%s:%s/upnp/control/basicevent1' % (ip, port))
     request.add_header('Content-type', 'text/xml; charset="utf-8"')
     request.add_header('SOAPACTION', commands[command]['header'])
     body = '<?xml version="1.0" encoding="utf-8"?>'
@@ -54,13 +72,7 @@ def send(ip, command, ports):
     result = urllib2.urlopen(request, timeout=1)
     return result.read()
   except Exception as e:
-    if isinstance(e, socket.timeout):
-      if len(ports) == 1:
-        raise Exception("AllPortsFailed")
-      ports = ports[1:]
-      return send(ip, command, ports)
-    else:
-      raise
+    return None
 
 def extract(response, name):
   exp = '<%s>(.*?)<\/%s>' % (name, name)
@@ -72,15 +84,15 @@ def extract(response, name):
 def main():
   args = get_args()
   if args['command'] in commands:
-    result = send(args['ip'], args['command'], ports)
+    result = send(args['ip'], args['command'])
     if 'data' in commands[args['command']]:
       print extract(result, commands[args['command']]['data'])
   elif args['command'] == 'toggle':
-    status = send(args['ip'], 'status', ports)
+    status = send(args['ip'], 'status')
     if status.find('<BinaryState>1</BinaryState') > -1:
-      send(args['ip'], 'off', ports)
+      send(args['ip'], 'off')
     elif status.find('<BinaryState>0</BinaryState') > -1:
-      send(args['ip'], 'on', ports)
+      send(args['ip'], 'on')
     else:
       raise Exception("UnexpectedStatusResponse")
   else:
