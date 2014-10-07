@@ -97,8 +97,10 @@ def main():
         status = send(args['ip'], 'status')
         if status.find('<BinaryState>1</BinaryState') > -1:
             send(args['ip'], 'off')
+            output(extract(send(args['ip'], 'status'), commands['status']['data']))
         elif status.find('<BinaryState>0</BinaryState') > -1:
             send(args['ip'], 'on')
+            output(extract(send(args['ip'], 'status'), commands['status']['data']))
         else:
             raise Exception("UnexpectedStatusResponse")
     else:
