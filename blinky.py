@@ -43,15 +43,15 @@ commands = {
 def get_args():
     if droid is None:
         return {
-        'ip'      : sys.argv[1],
-        'command' : sys.argv[2]
+          'ip'      : sys.argv[1],
+          'command' : sys.argv[2]
         }
     else:
         params = droid.getIntent().result[u'extras']
         return {
-        'ip'      : params['%target'],
-        'command' : params['%action']
-    }
+          'ip'      : params['%target'],
+          'command' : params['%action']
+        }
 
 def output(message):
     if droid is None:
