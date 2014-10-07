@@ -16,10 +16,12 @@ commands = {
     'on' : {
         'body'   : '<u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>1</BinaryState></u:SetBinaryState>',
         'header' : '"urn:Belkin:service:basicevent:1#SetBinaryState"',
+        'data'   : 'BinaryState'
     },
     'off' : {
         'body'   : '<u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>0</BinaryState></u:SetBinaryState>',
-        'header' : '"urn:Belkin:service:basicevent:1#SetBinaryState"'
+        'header' : '"urn:Belkin:service:basicevent:1#SetBinaryState"',
+        'data'   : 'BinaryState'
     },
     'status' : {
         'body'   : '<u:GetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>1</BinaryState></u:GetBinaryState>',
@@ -76,7 +78,7 @@ def try_send(ip, command, port):
         body += '<s:Body>%s</s:Body></s:Envelope>' % commands[command]['body']
         request.add_data(body)
         result = urllib2.urlopen(request, timeout=1)
-        return result.read()
+        return extract(result.read(), commands[command]['data'])
     except Exception as e:
         return None
 
@@ -91,18 +93,16 @@ def main():
     args = get_args()
     if args['command'] in commands:
         result = send(args['ip'], args['command'])
-        if 'data' in commands[args['command']]:
-            output(extract(result, commands[args['command']]['data']))
+        output(result)
     elif args['command'] == 'toggle':
         status = send(args['ip'], 'status')
-        if status.find('<BinaryState>1</BinaryState') > -1:
-            send(args['ip'], 'off')
-            output(extract(send(args['ip'], 'status'), commands['status']['data']))
-        elif status.find('<BinaryState>0</BinaryState') > -1:
-            send(args['ip'], 'on')
-            output(extract(send(args['ip'], 'status'), commands['status']['data']))
+        if status == '1':
+            result = send(args['ip'], 'off')
+        elif status == '0':
+            result = send(args['ip'], 'on')
         else:
             raise Exception("UnexpectedStatusResponse")
+        output(result)
     else:
         raise Exception("InvalidCommand")
 
