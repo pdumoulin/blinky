@@ -3,6 +3,7 @@ __email__ = "paul.l.dumoulin@gmail.com"
 
 import re
 import urllib2
+import time
 
 try:
     import android
@@ -41,17 +42,14 @@ commands = {
 }
 
 def get_args():
-    if droid is None:
-        return {
-          'ip'      : sys.argv[1],
-          'command' : sys.argv[2]
-        }
-    else:
-        params = droid.getIntent().result[u'extras']
-        return {
-          'ip'      : params['%target'],
-          'command' : params['%action']
-        }
+    result = {}
+    params = droid.getIntent().result[u'extras'] if droid is not None else {}
+    result['ip'] = sys.argv[1] if droid is None else params['%argv1']
+    result['command'] = sys.argv[2] if droid is None else params['%argv2']
+    if result['command'] == 'burst':
+        result['time'] = sys.argv[3] if droid is None else params['%argv3']
+        result['time'] = float(result['time'])
+    return result
 
 def output(message):
     if droid is None:
@@ -103,6 +101,16 @@ def main():
         else:
             raise Exception("UnexpectedStatusResponse")
         output(result)
+    elif args['command'] == 'burst':
+        status = send(args['ip'], 'status')
+        if status == '1':
+            raise Exception("SwitchAlreadyOn")
+        elif status == '0':
+            result = send(args['ip'], 'on')
+            time.sleep(args['time'])
+            result = send(args['ip'], 'off')
+        else:
+            raise Exception("UnexpectedStatusResponse")
     else:
         raise Exception("InvalidCommand")
 
