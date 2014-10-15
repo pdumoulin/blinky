@@ -12,7 +12,6 @@ except ImportError:
     import sys
     droid = None
 
-
 class wemo:
     OFF_STATE = '0'
     ON_STATE = '1'
@@ -43,29 +42,31 @@ class wemo:
             raise Exception("UnexpectedStatusResponse")
 
     def on(self):
-        return self._send('SetBinaryState', 'BinaryState', 1)
+        return self._send('Set', 'BinaryState', 1)
 
     def off(self):
-        return self._send('SetBinaryState', 'BinaryState', 0)
+        return self._send('Set', 'BinaryState', 0)
 
     def status(self):
-        return self._send('GetBinaryState', 'BinaryState')
+        return self._send('Get', 'BinaryState')
 
     def name(self):
-        return self._send('GetFriendlyName', 'FriendlyName')
+        return self._send('Get', 'FriendlyName')
 
     def signal(self):
-        return self._send('GetSignalStrength', 'SignalStrength')
+        return self._send('Get', 'SignalStrength')
   
-    def _get_header_xml(self, method):
+    def _get_header_xml(self, method, obj):
+        method = method + obj
         return '"urn:Belkin:service:basicevent:1#%s"' % method
    
     def _get_body_xml(self, method, obj, value=0):
+        method = method + obj
         return '<u:%s xmlns:u="urn:Belkin:service:basicevent:1"><%s>%s</%s></u:%s>' % (method, obj, value, obj, method)
     
     def _send(self, method, obj, value=None):
         body_xml = self._get_body_xml(method, obj, value)
-        header_xml = self._get_header_xml(method)
+        header_xml = self._get_header_xml(method, obj)
         for port in self.ports:
             result = self._try_send(self.ip, port, body_xml, header_xml, obj) 
             if result is not None:
@@ -106,6 +107,7 @@ def get_args():
     return result
 
 def output(message):
+    global droid
     if droid is None:
         print message
     else:
