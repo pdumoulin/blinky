@@ -18,10 +18,9 @@ class wemo:
     ON_STATE = '1'
     ip = None
     ports = [49153, 49152, 49154]
+
     def __init__(self, switch_ip):
         self.ip = switch_ip      
-   
-    # TODO - generate XML by (method, object) in order to DRY it up
    
     def toggle(self):
         status = self.status()
@@ -42,45 +41,33 @@ class wemo:
             return result
         else:
             raise Exception("UnexpectedStatusResponse")
-    
+
     def on(self):
-        return self._send(
-            '<u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>1</BinaryState></u:SetBinaryState>', 
-            '"urn:Belkin:service:basicevent:1#SetBinaryState"', 
-            'BinaryState'
-        )
+        return self._send('SetBinaryState', 'BinaryState', 1)
 
     def off(self):
-        return self._send(
-            '<u:SetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>0</BinaryState></u:SetBinaryState>', 
-            '"urn:Belkin:service:basicevent:1#SetBinaryState"',
-            'BinaryState'
-        )
+        return self._send('SetBinaryState', 'BinaryState', 0)
 
     def status(self):
-        return self._send(
-            '<u:GetBinaryState xmlns:u="urn:Belkin:service:basicevent:1"><BinaryState>1</BinaryState></u:GetBinaryState>',
-            '"urn:Belkin:service:basicevent:1#GetBinaryState"',
-            'BinaryState'
-        )
-    
+        return self._send('GetBinaryState', 'BinaryState')
+
     def name(self):
-        return self._send(
-            '<u:GetFriendlyName xmlns:u="urn:Belkin:service:basicevent:1"><FriendlyName></FriendlyName></u:GetFriendlyName>',
-            '"urn:Belkin:service:basicevent:1#GetFriendlyName"',
-            'FriendlyName'
-        )   
+        return self._send('GetFriendlyName', 'FriendlyName')
 
     def signal(self):
-        return self._send(
-            '<u:GetSignalStrength xmlns:u="urn:Belkin:service:basicevent:1"><GetSignalStrength>0</GetSignalStrength></u:GetSignalStrength>',
-            '"urn:Belkin:service:basicevent:1#GetSignalStrength"',
-            'SignalStrength'
-        )
+        return self._send('GetSignalStrength', 'SignalStrength')
+  
+    def _get_header_xml(self, method):
+        return '"urn:Belkin:service:basicevent:1#%s"' % method
+   
+    def _get_body_xml(self, method, obj, value=0):
+        return '<u:%s xmlns:u="urn:Belkin:service:basicevent:1"><%s>%s</%s></u:%s>' % (method, obj, value, obj, method)
     
-    def _send(self, body, header, data):
+    def _send(self, method, obj, value=None):
+        body_xml = self._get_body_xml(method, obj, value)
+        header_xml = self._get_header_xml(method)
         for port in self.ports:
-            result = self._try_send(self.ip, port, body, header, data) 
+            result = self._try_send(self.ip, port, body_xml, header_xml, obj) 
             if result is not None:
                 self.ports = [port]
             return result
@@ -139,6 +126,8 @@ def main():
         output(switch.name())
     elif args['command'] == 'signal':
         output(switch.signal())
+    elif args['command'] == 'burst':
+        output(switch.burst(args['time']))
     
 if __name__ == "__main__":
     main()
