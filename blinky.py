@@ -14,20 +14,21 @@ except ImportError:
 
 class wemo:
     OFF_STATE = '0'
-    ON_STATE = '1'
+    ON_STATES = ['1', '8']
     ip = None
-    ports = [49153, 49152, 49154]
+    ports = [49153, 49152, 49154, 49151, 49155]
 
     def __init__(self, switch_ip):
         self.ip = switch_ip      
    
     def toggle(self):
         status = self.status()
-        if status == self.ON_STATE:
+        if status in self.ON_STATES:
             result = self.off()
         elif status == self.OFF_STATE:
             result = self.on()
         else:
+            print status
             raise Exception("UnexpectedStatusResponse")
         return result    
     
@@ -83,7 +84,7 @@ class wemo:
             request_body += '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">'
             request_body += '<s:Body>%s</s:Body></s:Envelope>' % body
             request.add_data(request_body)
-            result = urllib2.urlopen(request, timeout=1)
+            result = urllib2.urlopen(request, timeout=3)
             return self._extract(result.read(), data)
         except Exception as e:
             print str(e)
