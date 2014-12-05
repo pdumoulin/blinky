@@ -28,7 +28,6 @@ class wemo:
         elif status == self.OFF_STATE:
             result = self.on()
         else:
-            print status
             raise Exception("UnexpectedStatusResponse")
         return result    
     
