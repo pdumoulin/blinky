@@ -40,6 +40,13 @@ class wemo:
             return result
         else:
             raise Exception("UnexpectedStatusResponse")
+    
+    def pulse(self, seconds):
+        start = int(time.time())
+        diff = 0
+        while diff < seconds:
+            diff = int(time.time()) - start
+            self.toggle()
 
     def on(self):
         return self._send('Set', 'BinaryState', 1)
@@ -101,7 +108,7 @@ def get_args():
     params = droid.getIntent().result[u'extras'] if droid is not None else {}
     result['ip'] = sys.argv[1] if droid is None else params['%argv1']
     result['command'] = sys.argv[2] if droid is None else params['%argv2']
-    if result['command'] == 'burst':
+    if result['command'] in ['burst', 'pulse']:
         result['time'] = sys.argv[3] if droid is None else params['%argv3']
         result['time'] = float(result['time'])
     return result
@@ -130,6 +137,8 @@ def main():
         output(switch.signal())
     elif args['command'] == 'burst':
         output(switch.burst(args['time']))
+    elif args['command'] == 'pulse':
+        output(switch.pulse(args['time']))
     
 if __name__ == "__main__":
     main()
