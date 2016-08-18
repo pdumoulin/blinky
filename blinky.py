@@ -57,8 +57,11 @@ class wemo:
     def status(self):
         return self._send('Get', 'BinaryState')
 
-    def name(self):
+    def identify(self):
         return self._send('Get', 'FriendlyName')
+
+    def name(self, name):
+        return self._send('Change', 'FriendlyName', name)
 
     def signal(self):
         return self._send('Get', 'SignalStrength')
@@ -111,6 +114,8 @@ def get_args():
     if result['command'] in ['burst', 'pulse']:
         result['time'] = sys.argv[3] if droid is None else params['%argv3']
         result['time'] = float(result['time'])
+    if result['command'] in ['name']:
+        result['name'] = sys.argv[3] if droid is None else params['%argv3']
     return result
 
 def output(message):
@@ -123,6 +128,7 @@ def output(message):
 def main():
     args = get_args()
     switch = wemo(args['ip'])
+
     if args['command'] == 'on':
         output(switch.on())
     elif args['command'] == 'off':
@@ -131,8 +137,10 @@ def main():
         output(switch.toggle())
     elif args['command'] == 'status':
         output(switch.status())
+    elif args['command'] == 'identify':
+        output(switch.identify())
     elif args['command'] == 'name':
-        output(switch.name())
+        output(switch.name(args['name']))
     elif args['command'] == 'signal':
         output(switch.signal())
     elif args['command'] == 'burst':
