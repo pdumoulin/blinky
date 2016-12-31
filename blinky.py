@@ -16,10 +16,12 @@ class wemo:
     OFF_STATES = ['0']
     ON_STATES = ['1', '8']
     ip = None
+    timeout = None
     ports = [49153, 49152, 49154, 49151, 49155]
 
-    def __init__(self, switch_ip):
+    def __init__(self, switch_ip, switch_timeout=3):
         self.ip = switch_ip      
+        self.timeout = int(switch_timeout)
    
     def toggle(self):
         status = self.status()
@@ -67,34 +69,36 @@ class wemo:
         return self._send('Get', 'SignalStrength')
   
     def _get_header_xml(self, method, obj):
-        method = method + obj
-        return '"urn:Belkin:service:basicevent:1#%s"' % method
+        return '"urn:Belkin:service:basicevent:1#%s%s"' % (method, obj)
    
     def _get_body_xml(self, method, obj, value=0):
-        method = method + obj
-        return '<u:%s xmlns:u="urn:Belkin:service:basicevent:1"><%s>%s</%s></u:%s>' % (method, obj, value, obj, method)
+        body_insert = '<u:%s%s xmlns:u="urn:Belkin:service:basicevent:1"><%s>%s</%s></u:%s%s>' % (method, obj, obj, value, obj, method, obj)
+        body = '<?xml version="1.0" encoding="utf-8"?>'
+        body += '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">'
+        body += '<s:Body>%s</s:Body></s:Envelope>' % body_insert
+        return body
+   
+    def _get_url(self, ip, port):
+        return 'http://%s:%s/upnp/control/basicevent1' % (ip, port)
     
     def _send(self, method, obj, value=None):
         body_xml = self._get_body_xml(method, obj, value)
         header_xml = self._get_header_xml(method, obj)
         for port in self.ports:
-            result = self._try_send(self.ip, port, body_xml, header_xml, obj) 
+            result = self._try_send(self._get_url(self.ip, port), body_xml, header_xml, obj)
             if result is not None:
                 self.ports.insert(0, self.ports.pop(self.ports.index(port)))
                 return result
         raise Exception("TimeoutOnAllPorts")
 
-    def _try_send(self, ip, port, body, header, data):
+    def _try_send(self, url, body, header, obj):
         try:
-            request = urllib2.Request('http://%s:%s/upnp/control/basicevent1' % (ip, port))
+            request = urllib2.Request(url)
             request.add_header('Content-type', 'text/xml; charset="utf-8"')
             request.add_header('SOAPACTION', header)
-            request_body = '<?xml version="1.0" encoding="utf-8"?>'
-            request_body += '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">'
-            request_body += '<s:Body>%s</s:Body></s:Envelope>' % body
-            request.add_data(request_body)
-            result = urllib2.urlopen(request, timeout=3)
-            return self._extract(result.read(), data)
+            request.add_data(body)
+            result = urllib2.urlopen(request, timeout=self.timeout)
+            return self._extract(result.read(), obj)
         except Exception as e:
             print str(e)
             return None
