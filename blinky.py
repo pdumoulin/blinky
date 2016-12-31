@@ -13,7 +13,7 @@ except ImportError:
     droid = None
 
 class wemo:
-    OFF_STATE = '0'
+    OFF_STATES = ['0']
     ON_STATES = ['1', '8']
     ip = None
     ports = [49153, 49152, 49154, 49151, 49155]
@@ -25,21 +25,21 @@ class wemo:
         status = self.status()
         if status in self.ON_STATES:
             result = self.off()
-        elif status == self.OFF_STATE:
+        elif status in self.OFF_STATES:
             result = self.on()
         else:
-            raise Exception("UnexpectedStatusResponse")
+            raise Exception("UnexpectedStartState")
         return result    
     
     def burst(self, seconds):
         status = self.status()
-        if status == self.OFF_STATE:
+        if status in self.OFF_STATES:
             self.on()
             time.sleep(seconds)
             result = self.off()
             return result
         else:
-            raise Exception("UnexpectedStatusResponse")
+            raise Exception("UnexpectedStartState")
     
     def pulse(self, seconds):
         start = int(time.time())
@@ -80,8 +80,8 @@ class wemo:
         for port in self.ports:
             result = self._try_send(self.ip, port, body_xml, header_xml, obj) 
             if result is not None:
-                self.ports = [port]
-            return result
+                self.ports.insert(0, self.ports.pop(self.ports.index(port)))
+                return result
         raise Exception("TimeoutOnAllPorts")
 
     def _try_send(self, ip, port, body, header, data):
