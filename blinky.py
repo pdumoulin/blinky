@@ -100,7 +100,6 @@ class wemo:
             result = urllib2.urlopen(request, timeout=self.timeout)
             return self._extract(result.read(), obj)
         except Exception as e:
-            print str(e)
             return None
 
     def _extract(self, response, name):
