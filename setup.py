@@ -10,6 +10,6 @@ setup(
     author_email='paul.l.dumoulin@gmail.com',
     url='https://github.com/pdumoulin/blinky',
     install_requires=[
-        'requests==2.12.4'
+        'requests==2.20.0'
     ]
 )
