@@ -40,10 +40,18 @@ class Wemo:
             self.off()
 
     def on(self) -> bool:
-        return self._status(self._send('Set', 'BinaryState', 1))
+        try:
+            return self._status(self._send('Set', 'BinaryState', 1))
+        except:
+            pass
+        return self.status()
 
     def off(self) -> bool:
-        return self._status(self._send('Set', 'BinaryState', 0))
+        try:
+            return self._status(self._send('Set', 'BinaryState', 0))
+        except:
+            pass
+        return self.status()
 
     def status(self) -> bool:
         return self._status(self._send('Get', 'BinaryState'))
