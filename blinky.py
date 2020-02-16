@@ -1,9 +1,13 @@
+"""Interface for Belkin WeMo switches."""
 
 import re
 import time
+
 import requests
 
+
 class Wemo:
+    """Instance of switch."""
 
     URL_TMPL = 'http://{ip}:{port}/upnp/control/basicevent1'
     HEADER_TMPL = '"urn:Belkin:service:basicevent:1#{method}{obj}"'
@@ -22,7 +26,7 @@ class Wemo:
         </s:Envelope>
     '''
 
-    def __init__(self, ip: str, timeout: int=3):
+    def __init__(self, ip: str, timeout: int = 3):
         self.ip = ip
         self.timeout = timeout
         self.ports = [49153, 49152, 49154, 49151, 49155]
@@ -42,14 +46,14 @@ class Wemo:
     def on(self) -> bool:
         try:
             return self._status(self._send('Set', 'BinaryState', 1))
-        except:
+        except:  # noqa: E722
             pass
         return self.status()
 
     def off(self) -> bool:
         try:
             return self._status(self._send('Set', 'BinaryState', 0))
-        except:
+        except:  # noqa: E722
             pass
         return self.status()
 
@@ -71,10 +75,10 @@ class Wemo:
             return False
         raise Exception('UnknownStatus%s' % status)
 
-    def _send(self, method: str, obj: str, param: str=None) -> str:
+    def _send(self, method: str, obj: str, param: str = None) -> str:
         headers = {
-            'Content-type' : 'text/xml; charset="utf-8"',
-            'SOAPACTION'   : Wemo.HEADER_TMPL.format(method=method, obj=obj)
+            'Content-type': 'text/xml; charset="utf-8"',
+            'SOAPACTION': Wemo.HEADER_TMPL.format(method=method, obj=obj)
         }
         body = Wemo.BODY_TMPL.format(method=method, obj=obj, param=param)
         for index, port in enumerate(self.ports):
@@ -88,7 +92,7 @@ class Wemo:
                 )
                 if response.status_code == 200:
                     match = re.search(
-                        '<{obj}>(.*?)<\/{obj}>'.format(obj=obj),
+                        '<{obj}>(.*?)<\/{obj}>'.format(obj=obj),  # noqa: W605
                         response.text
                     )
                     if match:
