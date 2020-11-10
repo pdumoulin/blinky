@@ -84,7 +84,7 @@ class Wemo:
         for index, port in enumerate(self.ports):
             url = Wemo.URL_TMPL.format(ip=self.ip, port=port)
             try:
-                response = requests.get(
+                response = requests.post(
                     url,
                     headers=headers,
                     data=body,
