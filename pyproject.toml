@@ -1,0 +1,23 @@
+[project]
+name = "pyblinky"
+description = "Belkin brand Wemo plug control"
+version = "4.0.0"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["wemo", "belkin", "smart home"]
+authors = [
+    {name = "Paul Dumoulin", email = "paul.l.dumoulin@gmail.com"}
+]
+requires-python = ">=3.8"
+dependencies = [
+    'httpx >= 0.23.0, <2'
+]
+
+[project.urls]
+Repository = "https://github.com/pdumoulin/blinky.git"
+Homepage = "https://github.com/pdumoulin/blinky"
+Issues = "https://github.com/pdumoulin/blinky/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
